@@ -137,3 +137,4 @@ def get_compiled_model(h_size, w_size, start_neurons):
     output_layer = build_model(input_layer, start_neurons)
     model = Model(input_layer, output_layer)
     model.compile(loss=bce_dice_loss, optimizer=Adam(lr=1e-3), metrics=[my_iou_metric])
+    return model
