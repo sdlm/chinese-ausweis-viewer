@@ -2,8 +2,8 @@ import numpy as np
 import tensorflow as tf
 from keras import Model
 from keras import backend as K
-from keras.layers import Input, Conv2D, Conv2DTranspose, MaxPooling2D, concatenate, Dropout, \
-    binary_crossentropy
+from keras.layers import Input, Conv2D, Conv2DTranspose, MaxPooling2D, concatenate, Dropout
+from keras.losses import binary_crossentropy
 from keras.optimizers import Adam
 from keras.utils.generic_utils import get_custom_objects
 
