@@ -3,6 +3,6 @@ services:
   web:
     build: .
     ports:
-      - 8080:8888
+      - 80:8888
     volumes:
-      - ./chinese_ausweis_viewer:/home/jovyan/src
+      - ./chinese_ausweis_viewer:/tf/src
