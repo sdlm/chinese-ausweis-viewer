@@ -1,0 +1,8 @@
+version: '3'
+services:
+  web:
+    build: .
+    ports:
+      - 8080:8888
+    volumes:
+      - ./chinese_ausweis_viewer:/home/jovyan/src
