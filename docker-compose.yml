@@ -13,8 +13,8 @@ services:
     ports:
       - 8000:4000
     volumes:
-      - ./chinese_ausweis_viewer:/app
-    command: gunicorn -w 4 -b 0.0.0.0:4000 app:app --chdir /app --reload
+      - ./chinese_ausweis_viewer:/src
+    command: gunicorn -b 0.0.0.0:4000 app.app:app --chdir /src --reload
     environment:
-      - FLASK_APP=/app/app.py
-      - FLASK_DEBUG=1
+      - FLASK_APP=/src/app/app.py
+      - PYTHONUNBUFFERED=1
