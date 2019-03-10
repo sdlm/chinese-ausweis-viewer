@@ -24,18 +24,17 @@ def predict_mask(image_data):
     # prepare input image
     test_x = np.zeros((1, h_size, w_size, 3), dtype='float32')
     test_image = Image.open(io.BytesIO(image_data))
-    test_image_arr = np.array(test_image)
-    test_x[0] = test_image_arr
+    test_x[0] = np.array(test_image, dtype='float32') / 255.0
 
     # predict mask
     test_y = model.predict(test_x)
 
     # prepare output array
-    test_mask = test_y[0]
+    test_mask = test_y[0] * 255
     test_mask = test_mask.reshape(256, 256)
     test_mask = test_mask.astype(np.uint8)
     zero_layer = np.zeros((256, 256), dtype=np.uint8)
-    stacked_img = np.stack((zero_layer, test_mask * 255, zero_layer), axis=-1)
+    stacked_img = np.stack((zero_layer, test_mask, zero_layer), axis=-1)
 
     # make jpg image
     image = Image.fromarray(stacked_img, 'RGB')
