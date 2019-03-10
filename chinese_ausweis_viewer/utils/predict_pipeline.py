@@ -33,8 +33,9 @@ def predict_mask(image_data):
     # prepare output array
     test_mask = test_y[0]
     test_mask = test_mask.reshape(256, 256)
-    zero_layer = np.zeros((256, 256), dtype='float32')
-    stacked_img = np.stack((zero_layer, test_mask, zero_layer), axis=-1)
+    test_mask = test_mask.astype(np.uint8)
+    zero_layer = np.zeros((256, 256), dtype=np.uint8)
+    stacked_img = np.stack((zero_layer, test_mask * 255, zero_layer), axis=-1)
 
     # make jpg image
     image = Image.fromarray(stacked_img, 'RGB')
@@ -42,5 +43,4 @@ def predict_mask(image_data):
     image.save(imgByteArr, format='jpeg')
     imgByteArr = imgByteArr.getvalue()
 
-    image.save('/src/data/predict.png', format='png')
     return imgByteArr
