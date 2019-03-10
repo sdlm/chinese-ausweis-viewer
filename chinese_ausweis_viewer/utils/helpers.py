@@ -1,3 +1,4 @@
+from PIL import Image
 import numpy as np
 from matplotlib import pyplot as plt
 
@@ -19,3 +20,16 @@ def show_predict_mask_above_image(test_image, model, h_size, w_size):
     zero_layer = np.zeros((256, 256), dtype='float32')
     stacked_img = np.stack((zero_layer, test_mask, zero_layer), axis=-1)
     im2 = plt.imshow(stacked_img, alpha=0.5, extent=extent)
+
+
+def resize_to_256(nd_array):
+    im = Image.fromarray(nd_array)
+    width, height = im.size
+    min_size = min(width, height)
+    left = (width - min_size) / 2
+    top = (height - min_size) / 2
+    right = (width + min_size) / 2
+    bottom = (height + min_size) / 2
+    im = im.crop((left, top, right, bottom))
+    im = im.resize((256, 256), Image.ANTIALIAS)
+    return np.array(im)
