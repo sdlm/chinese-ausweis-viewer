@@ -14,7 +14,6 @@ services:
       - 8000:4000
     volumes:
       - ./chinese_ausweis_viewer:/src
-    command: gunicorn -b 0.0.0.0:4000 app.app:app --chdir /src --reload
+    command: gunicorn -b 0.0.0.0:4000 src.app:app --chdir / --reload
     environment:
-      - FLASK_APP=/src/app/app.py
       - PYTHONUNBUFFERED=1

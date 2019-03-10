@@ -1,8 +1,11 @@
-from flask import request, jsonify
+import io
 
+from flask import request, jsonify, send_file
+
+from .utils.web_app import allowed_file
+from .utils.predict_pipeline import predict_mask
 from .app import app
 from .exceptions import InvalidUsage
-from .utils import allowed_file, save_file
 
 
 @app.route('/')
@@ -18,8 +21,19 @@ def predict():
     if not file or file.filename == '':
         raise InvalidUsage('You must send file')
     if allowed_file(file.filename):
-        save_file(file)
-        return 'predict ...'
+        # save_file(file)
+        # return 'predict ...'
+
+        input_file = file.read()
+
+        mask = predict_mask(input_file)
+
+        return send_file(
+            io.BytesIO(mask),
+            attachment_filename='mask.jpg',
+            mimetype='image/jpg'
+        )
+
     else:
         raise InvalidUsage('Only .jpg allowed')
 
