@@ -1,9 +1,0 @@
-version: '3'
-services:
-
-  notebook:
-    image: sdlmer/ausweis:notebook
-    ports:
-      - 80:8888
-    volumes:
-      - ./chinese_ausweis_viewer:/tf
