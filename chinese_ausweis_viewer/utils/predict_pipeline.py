@@ -4,6 +4,7 @@ import PIL
 import numpy as np
 from PIL import Image
 
+from .optical_character_recognition import extract_data
 from .unet import get_compiled_model
 
 
@@ -43,3 +44,18 @@ def predict_mask(image_data):
     imgByteArr = imgByteArr.getvalue()
 
     return imgByteArr
+
+
+def extract_card_fields_data(card_img):
+    # load original images
+    original_card = np.array(card_img, dtype=np.uint8)
+
+    rotated_mask_256 = ...  # predict
+
+    # get card image by mask_256
+    reversed_croped_card = pipeline(rotated_mask_256, original_card)
+
+    # extract text data from card image
+    data = extract_data(reversed_croped_card)
+
+    return data

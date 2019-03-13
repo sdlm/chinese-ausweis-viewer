@@ -15,27 +15,28 @@ def ping():
 
 @app.route('/predict/', methods=['POST'])
 def predict():
-    if 'file' not in request.files:
-        raise InvalidUsage('You must send file')
-    file = request.files['file']
-    if not file or file.filename == '':
-        raise InvalidUsage('You must send file')
-    if allowed_file(file.filename):
-        # save_file(file)
-        # return 'predict ...'
+    file = get_file_from_request(request)
 
-        input_file = file.read()
+    input_file = file.read()
 
-        mask = predict_mask(input_file)
+    mask = predict_mask(input_file)
 
-        return send_file(
-            io.BytesIO(mask),
-            attachment_filename='mask.jpg',
-            mimetype='image/jpg'
-        )
+    return send_file(
+        io.BytesIO(mask),
+        attachment_filename='mask.jpg',
+        mimetype='image/jpg'
+    )
 
-    else:
-        raise InvalidUsage('Only .jpg allowed')
+
+@app.route('/pipeline/', methods=['POST'])
+def pipeline():
+    file = get_file_from_request(request)
+
+    input_file = file.read()
+
+    card_fields_data = extract_card_fields_data(input_file)
+
+    return jsonify(card_fields_data)
 
 
 @app.errorhandler(InvalidUsage)
@@ -44,3 +45,22 @@ def handle_invalid_usage(error):
     response.status_code = error.status_code
     return response
 
+
+def get_file_from_request(request, rise_exc: bool = True):
+    if 'file' not in request.files:
+        if rise_exc:
+            raise InvalidUsage('You must send file')
+        return None
+
+    file = request.files['file']
+    if not file or file.filename == '':
+        if rise_exc:
+            raise InvalidUsage('You must send file')
+        return None
+
+    if not allowed_file(file.filename):
+        if rise_exc:
+            raise InvalidUsage('Only .jpg allowed')
+        return None
+
+    return file

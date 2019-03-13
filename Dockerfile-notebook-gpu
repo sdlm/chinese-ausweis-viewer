@@ -3,4 +3,4 @@ FROM tensorflow/tensorflow:1.13.1-gpu-py3-jupyter
 RUN apt update && apt install -y libsm6 libxext6 libxrender1 libglib2.0-0
 
 RUN pip install --no-cache-dir keras imageio tqdm imgaug \
-                               opencv-python py-cpuinfo seaborn
+                               opencv-python py-cpuinfo seaborn pytesseract
