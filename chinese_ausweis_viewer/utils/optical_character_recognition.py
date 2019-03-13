@@ -1,3 +1,5 @@
+import numpy as np
+
 from imgaug import augmenters as iaa
 from PIL import Image
 import pytesseract
@@ -23,11 +25,11 @@ LABELS = [
 ]
 
 
-def extract_data(reversed_croped_card, box_coords):
+def extract_data(cropped_card, box_coords):
     image_data = {}
     for i, box in enumerate(box_coords):
         title = LABELS[i]
-        img_part = crop_img_part_by_box(reversed_croped_card, box)
+        img_part = crop_img_part_by_box(cropped_card, box)
         gray_img_part = grayscale(img_part)
         image_data[title] = ''
         k = 6
@@ -40,6 +42,14 @@ def extract_data(reversed_croped_card, box_coords):
             else:
                 gray_img_part = prepare_img_part(gray_img_part)
     return image_data
+
+
+def get_actual_box_coords(boxes, cropped_card):
+    coefficient = np.array([float(cropped_card.shape[1]), float(cropped_card.shape[0])])
+    return [
+        np.int0(box * coefficient)
+        for box in boxes
+    ]
 
 
 def crop_img_part_by_box(img, box):
@@ -57,6 +67,9 @@ def grayscale(img):
 
 
 def prepare_img_part(img):
+    """
+    Use some magic coefficients/ like 1.05
+    """
     prepare_seq = iaa.Sequential([
         iaa.Multiply(1.05),
         iaa.ContrastNormalization(1.05),

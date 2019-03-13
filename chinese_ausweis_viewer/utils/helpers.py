@@ -26,10 +26,10 @@ def resize_to_256(nd_array):
     im = Image.fromarray(nd_array)
     width, height = im.size
     min_size = min(width, height)
-    left = (width - min_size) / 2
-    top = (height - min_size) / 2
-    right = (width + min_size) / 2
-    bottom = (height + min_size) / 2
+    left = int((width - min_size) / 2)
+    top = int((height - min_size) / 2)
+    right = int((width + min_size) / 2)
+    bottom = int((height + min_size) / 2)
     im = im.crop((left, top, right, bottom))
     im = im.resize((256, 256), Image.ANTIALIAS)
     return np.array(im)

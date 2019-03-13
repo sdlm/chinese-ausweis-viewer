@@ -1,16 +1,40 @@
 import io
 
-import PIL
+import pandas as pd
 import numpy as np
 from PIL import Image
 
-from .optical_character_recognition import extract_data
+from .helpers import resize_to_256
+from .cutter import crop_by_mask
+from .optical_character_recognition import extract_data, get_actual_box_coords
 from .unet import get_compiled_model
 
 
 h_size = 256
 w_size = 256
 start_neurons = 16
+
+
+def load_boxes():
+    df = pd.read_csv('./src/data/resident_identity_card_mapping.csv')
+    boxes_ = list()
+    for i in range(df.shape[0]):
+        x0 = df.iloc[i][0]
+        y0 = df.iloc[i][1]
+        sx = df.iloc[i][2]
+        sy = df.iloc[i][3]
+
+        box = np.array([
+            [x0, y0 + sy],
+            [x0, y0],
+            [x0 + sx, y0],
+            [x0 + sx, y0 + sy],
+        ])
+        boxes_.append(box)
+    return boxes_
+
+
+boxes = load_boxes()
 
 
 def get_model():
@@ -34,8 +58,13 @@ def predict_mask(image_data):
     test_mask = test_y[0] * 255
     test_mask = test_mask.reshape(256, 256)
     test_mask = test_mask.astype(np.uint8)
+
+    return test_mask
+
+
+def prepare_output_img(mask_arr):
     zero_layer = np.zeros((256, 256), dtype=np.uint8)
-    stacked_img = np.stack((zero_layer, test_mask, zero_layer), axis=-1)
+    stacked_img = np.stack((zero_layer, mask_arr, zero_layer), axis=-1)
 
     # make jpg image
     image = Image.fromarray(stacked_img, 'RGB')
@@ -46,16 +75,21 @@ def predict_mask(image_data):
     return imgByteArr
 
 
-def extract_card_fields_data(card_img):
+def extract_card_fields_data(input_file):
     # load original images
-    original_card = np.array(card_img, dtype=np.uint8)
+    input_image = Image.open(input_file)
+    card_arr = np.array(input_image, dtype=np.uint8)
 
-    rotated_mask_256 = ...  # predict
+    card_arr_256 = resize_to_256(card_arr)
+    mask_256 = predict_mask(card_arr_256)
 
     # get card image by mask_256
-    reversed_croped_card = pipeline(rotated_mask_256, original_card)
+    cropped_card = crop_by_mask(mask_256, card_arr)
+
+    # get box coord for card fields
+    box_coords = get_actual_box_coords(boxes, cropped_card)
 
     # extract text data from card image
-    data = extract_data(reversed_croped_card)
+    data = extract_data(cropped_card, box_coords)
 
     return data
