@@ -3,7 +3,8 @@ import io
 from flask import request, jsonify, send_file
 
 from .utils.web_app import allowed_file
-from .utils.predict_pipeline import predict_mask, extract_card_fields_data, prepare_output_img
+from .utils.predict_pipeline import predict_mask, extract_card_fields_data, prepare_output_img, \
+    get_np_arr_from_bytes
 from .app import app
 from .exceptions import InvalidUsage
 
@@ -16,10 +17,10 @@ def ping():
 @app.route('/predict/', methods=['POST'])
 def predict():
     file = get_file_from_request(request)
+    img_bytes = file.read()
 
-    input_file = file.read()
-
-    mask_arr = predict_mask(input_file)
+    img_arr = get_np_arr_from_bytes(img_bytes)
+    mask_arr = predict_mask(img_arr)
     mask_image_file = prepare_output_img(mask_arr)
 
     return send_file(
@@ -31,27 +32,10 @@ def predict():
 
 @app.route('/pipeline/', methods=['POST'])
 def pipeline():
-    if 'file' in request.files:
-        file = request.files['file']
-        print('- ' * 10)
-        print(request.files)
-        print('file.filename: %s' % file.filename)
-        print('file.content_length: %s' % file.content_length)
-        print('file.mimetype: %s' % file.mimetype)
-
     file = get_file_from_request(request)
+    img_bytes = file.read()
 
-    print('- ' * 5)
-    print(type(file))
-    print(file.content_length)
-    print(file.content_type)
-    print(file.mimetype)
-    print(file.mimetype_params)
-    print('- ' * 5)
-
-    input_file = file.read()
-
-    card_fields_data = extract_card_fields_data(input_file)
+    card_fields_data = extract_card_fields_data(img_bytes)
 
     return jsonify(card_fields_data)
 
@@ -74,6 +58,7 @@ def get_file_from_request(request, rise_exc: bool = True):
     print('file.filename: %s' % file.filename)
     print('file.content_length: %s' % file.content_length)
     print('file.mimetype: %s' % file.mimetype)
+    print('file.mimetype_params: %s' % file.mimetype_params)
     print('- ' * 10)
     if not file or file.filename == '':
         if rise_exc:
@@ -85,9 +70,9 @@ def get_file_from_request(request, rise_exc: bool = True):
             raise InvalidUsage('Only .jpg allowed')
         return None
 
-    if file.content_length == 0:
-        if rise_exc:
-            raise InvalidUsage('Empty file')
-        return None
+    # if file.content_length == 0:
+    #     if rise_exc:
+    #         raise InvalidUsage('Empty file')
+    #     return None
 
     return file

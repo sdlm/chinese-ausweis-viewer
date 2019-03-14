@@ -40,16 +40,16 @@ boxes = load_boxes()
 def get_model():
     model = get_compiled_model(h_size, w_size, start_neurons)
     model.load_weights('./src/data/weights/model_v1.h5')
+    # model.load_weights('./src/data/weights/n8/w_n8_002.h5')
     return model
 
 
-def predict_mask(image_data):
+def predict_mask(img_array):
     model = get_model()
 
     # prepare input image
     test_x = np.zeros((1, h_size, w_size, 3), dtype='float32')
-    test_image = Image.open(io.BytesIO(image_data))
-    test_x[0] = np.array(test_image, dtype='float32') / 255.0
+    test_x[0] = np.array(img_array, dtype='float32') / 255.0
 
     # predict mask
     test_y = model.predict(test_x)
@@ -75,21 +75,34 @@ def prepare_output_img(mask_arr):
     return imgByteArr
 
 
-def extract_card_fields_data(input_file):
+def extract_card_fields_data(img_bytes):
     # load original images
-    input_image = Image.open(input_file)
-    card_arr = np.array(input_image, dtype=np.uint8)
+    pil_image = get_pil_img_from_bytes(img_bytes)
+    card_arr = np.array(pil_image, dtype=np.uint8)
 
     card_arr_256 = resize_to_256(card_arr)
+    print('call predict_mask() ...')
     mask_256 = predict_mask(card_arr_256)
 
     # get card image by mask_256
+    print('call crop_by_mask() ...')
     cropped_card = crop_by_mask(mask_256, card_arr)
 
     # get box coord for card fields
+    print('call get_actual_box_coords() ...')
     box_coords = get_actual_box_coords(boxes, cropped_card)
 
     # extract text data from card image
+    print('call extract_data() ...')
     data = extract_data(cropped_card, box_coords)
 
     return data
+
+
+def get_pil_img_from_bytes(img_bytes):
+    return Image.open(io.BytesIO(img_bytes))
+
+
+def get_np_arr_from_bytes(img_bytes):
+    pil_img = get_pil_img_from_bytes(img_bytes)
+    return np.array(pil_img, dtype=np.uint8)

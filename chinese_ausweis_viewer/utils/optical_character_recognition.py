@@ -26,13 +26,19 @@ LABELS = [
 
 
 def extract_data(cropped_card, box_coords):
+    # pillow_img = Image.fromarray(cropped_card)
+    # pillow_img.save('./src/data/cropped_card.jpg', 'JPEG')
+
     image_data = {}
+    # image_parts = {}
     for i, box in enumerate(box_coords):
+        print('extract_data(): use tesseract for %s box' % (i+1))
         title = LABELS[i]
         img_part = crop_img_part_by_box(cropped_card, box)
         gray_img_part = grayscale(img_part)
         image_data[title] = ''
-        k = 6
+        # image_parts[title] = gray_img_part
+        k = 3
         while k > 0:
             k -= 1
             text = extract_text(gray_img_part)
@@ -41,6 +47,11 @@ def extract_data(cropped_card, box_coords):
                 break
             else:
                 gray_img_part = prepare_img_part(gray_img_part)
+
+    # for title, img_part in image_parts.items():
+    #     pillow_img = Image.fromarray(img_part)
+    #     pillow_img.save('./src/data/%s.jpg' % title, 'JPEG')
+
     return image_data
 
 
