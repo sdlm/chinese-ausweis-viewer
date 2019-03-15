@@ -8,4 +8,4 @@ RUN apt install -y libsm6 libxext6 libxrender1 libglib2.0-0 \
 
 RUN pip install --no-cache-dir keras imageio tqdm imgaug \
                                opencv-python py-cpuinfo seaborn \
-                               pytesseract opencv-python
+                               pytesseract opencv-python pillow==5.4.1
