@@ -2,9 +2,9 @@ import numpy as np
 from imgaug import augmenters as iaa
 from imgaug import parameters as iap
 
-from generate_flat_bg import get_flat_simple_bg, get_simple_bg
-from generate_bg import generate_rand_bg, merge_by_mask
-from helpers import resize_to_256
+from .generate_flat_bg import get_flat_simple_bg, get_simple_bg
+from .generate_bg import generate_rand_bg, merge_by_mask
+from .helpers import resize_to_256
 
 
 affine_aug = iaa.Affine(
@@ -60,6 +60,31 @@ random_aug = iaa.Sequential([
     ),
 
 ])
+
+
+def get_next_batch(
+    original_mask,
+    original_smpl,
+    simplest_flat_bg,
+    simple_bg,
+    mask_pool,
+    batch_size,
+    h_size, 
+    w_size,
+):
+    train_x = np.empty((batch_size, h_size, w_size, 3), dtype='float32')
+    train_y = np.empty((batch_size, h_size, w_size, 1), dtype='float32')
+    for i in range(batch_size):
+        img, msk = next_pair(
+            original_mask,
+            original_smpl,
+            simplest_flat_bg,
+            simple_bg,
+            mask_pool,
+        )
+        train_x[i] = img
+        train_y[i] = msk
+    return train_x, train_y
 
 
 def next_pair(
