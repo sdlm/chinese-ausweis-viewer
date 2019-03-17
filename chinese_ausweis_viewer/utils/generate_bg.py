@@ -1,72 +1,76 @@
-import random
+from random import randint
 import numpy as np
 from imgaug import augmenters as iaa
 from imgaug import parameters as iap
 
+MEAN_FLAT_BG = 128
+VARIANCE_FLAT_BG = MEAN_FLAT_BG * (2/3)  # because we have 3 dimension RGB
 
-def _admix_by_rand_mask_img(orig: np.ndarray, h_size=256, w_size=256, *, mask_pool):
-    # prepare mask
-    coef = max(iap.Normal(4, 1).draw_sample(), 0.5)
-    mask = random.choice(mask_pool) / 255.0 * coef
-    np.clip(mask, 0, 1, out=mask)
-
-    # admix mono background
-    addition = get_flat_background(h_size, w_size) / 255.0
-    merge = (1.0 - mask) * orig / 255.0 + mask * addition
-
-    #
-    np.clip(merge, 0, 255, out=merge)
-    return np.array(merge * 255.0, dtype=np.uint8)
+ADMIX_FLAT_BG_BY_MASK_AUG = iaa.FrequencyNoiseAlpha(
+    exponent=iap.Uniform(-4, 4),
+    first=iaa.Add(255),
+    size_px_max=32,
+    iterations=1,
+    sigmoid=True,
+    sigmoid_thresh=(-10, 10)
+)
 
 
-def admix_by_rand_mask_img(orig: np.ndarray, iter_count: int = 1, *, mask_pool):
-    for _ in range(iter_count):
-        orig = _admix_by_rand_mask_img(orig, mask_pool=mask_pool)
+def generate_rand_bg(h_size=256, w_size=256, bg_admix_iters=5):
+    smpl = get_flat_background_with_relative_colors_uniform_distribution(h_size, w_size)
+    
+    for _ in range(randint(1, bg_admix_iters)):
+        smpl = admix_flat_bg_by_mask(smpl)
+    
+    np.clip(smpl * 255, 0, 255, out=smpl)
+    return smpl.astype(np.uint8)
 
-    aug = iaa.Add(
-        iap.Normal(0, 35),
-        per_channel=1
+
+def admix_flat_bg_by_mask(orig: np.ndarray) -> np.ndarray:
+    img_for_adimx = get_flat_background_with_relative_colors_uniform_distribution(
+        h_size=orig.shape[0], 
+        w_size=orig.shape[1]
     )
-    orig = aug.augment_image(orig)
-    np.clip(orig, 0, 255, out=orig)
-    return orig
+    black = np.zeros(orig.shape, dtype=np.uint8)
+    mask = ADMIX_FLAT_BG_BY_MASK_AUG.augment_image(black) / 255.0
+    blended = (1.0 - mask) * orig + mask * img_for_adimx
+    np.clip(blended, 0, 1, out=blended)
+    return blended
 
 
-def generate_rand_bg(h_size=256, w_size=256, bg_admix_iters=5, *, mask_pool):
-    back = get_flat_background(h_size, w_size)
-    return admix_by_rand_mask_img(back, bg_admix_iters, mask_pool=mask_pool)
+def get_flat_background_with_relative_colors_uniform_distribution(
+    h_size: int = 256, 
+    w_size: int = 256
+) -> np.ndarray:
+    return get_flat_background_uniform_distribution(h_size, w_size).astype('float32') / 255.0
 
 
-def get_flat_background(h_size=256, w_size=256):
-    original_smpl = np.empty((h_size, w_size, 3), dtype=np.uint8)
-    original_smpl.fill(128)
-    aug = iaa.Add(
-        iap.Normal(0, 45),
-        per_channel=1
-    )
-    smpl = aug.augment_image(original_smpl)
-    np.clip(smpl, 0, 255, out=smpl)
-    return smpl
+def get_flat_background_normal_distribution(
+    h_size: int = 256, 
+    w_size: int = 256, *, 
+    mean: float = MEAN_FLAT_BG, 
+    variance: float = VARIANCE_FLAT_BG
+) -> np.ndarray:
+    colors = np.random.normal(mean, variance, 3).astype(np.uint8)
+    return _get_flat_background(h_size, w_size, colors)
 
 
-def get_mask(h_size=256, w_size=256):
-    white_bg = np.empty((h_size, w_size, 3), dtype=np.uint8)
-    white_bg.fill(255)
-    aug = iaa.Sequential([
-        iaa.CoarseDropout(
-            iap.Positive(iap.Normal(0, 0.2)),
-            size_percent=iap.Positive(iap.Normal(0, 0.1)) + 0.01
-        ),
-        iaa.GaussianBlur(
-            sigma=iap.Positive(iap.Normal(0, 5)) + 1
-        ),
-        iaa.PiecewiseAffine(
-            scale=iap.Positive(iap.Normal(0, 0.0333)) + 0.001
-        )
-    ])
-    mask = aug.augment_image(white_bg)
-    np.clip(mask, 0, 255, out=mask)
-    return mask
+def get_flat_background_uniform_distribution(
+    h_size: int = 256, 
+    w_size: int = 256, *, 
+    min_val: float = 0, 
+    max_val: float = 255
+) -> np.ndarray:
+    colors = np.random.uniform(min_val, max_val, 3).astype(np.uint8)
+    return _get_flat_background(h_size, w_size, colors)
+
+
+def _get_flat_background(h_size, w_size, colors):
+    np.clip(colors, 0, 255, out=colors)
+    r = np.full((h_size, w_size), colors[0])
+    g = np.full((h_size, w_size), colors[1])
+    b = np.full((h_size, w_size), colors[2])
+    return np.dstack([r,g,b])
 
 
 def merge_by_mask(background, foreground, mask):
@@ -78,3 +82,6 @@ def merge_by_mask(background, foreground, mask):
                 for c in range(chanells):
                     merg_arr[i][j][c] = foreground[i][j][c]
     return merg_arr
+
+
+get_flat_background = get_flat_background_normal_distribution

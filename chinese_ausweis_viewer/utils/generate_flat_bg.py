@@ -2,16 +2,10 @@ from imgaug import augmenters as iaa
 from imgaug import parameters as iap
 
 
-aug_for_flat_simple_bg = iaa.Sequential([
-    iaa.Add(
-        iap.Normal(0, 10),
-        per_channel=0.8
-    ),
-    iaa.ContrastNormalization(
-        iap.Normal(1, 0.1),
-        per_channel=0.8
-    )
-])
+aug_for_flat_simple_bg = iaa.Add(
+    iap.Normal(0, 10),
+    per_channel=0.8
+)
 
 aug_for_simple_bg = iaa.Sequential([
     iaa.Add(

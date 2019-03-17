@@ -53,7 +53,7 @@ random_aug = iaa.Sequential([
         0.4,
         # Augmenter that sets rectangular areas within images to zero.
         iaa.CoarseDropout(
-            (0, 0.1),
+            (0, 0.2),
             size_percent=(0.02, 0.3),
             per_channel=0.5
         ),
@@ -67,7 +67,6 @@ def get_next_batch(
     original_smpl,
     simplest_flat_bg,
     simple_bg,
-    mask_pool,
     batch_size,
     h_size, 
     w_size,
@@ -80,7 +79,6 @@ def get_next_batch(
             original_smpl,
             simplest_flat_bg,
             simple_bg,
-            mask_pool,
         )
         train_x[i] = img
         train_y[i] = msk
@@ -92,7 +90,6 @@ def next_pair(
     original_smpl,
     simplest_flat_bg,
     simple_bg,
-    mask_pool,
 ):
     _affine_aug = affine_aug._to_deterministic()
     _crop_aug = crop_aug._to_deterministic()
@@ -108,9 +105,9 @@ def next_pair(
     _smpl = iaa.Add(iap.Normal(0, 10)).augment_image(_smpl)
 
     rand_state = np.random.randint(low=1, high=100)
-    if rand_state < 40:
-        _bckg = generate_rand_bg(mask_pool=mask_pool)
-    elif rand_state < 70:
+    if rand_state < 60:
+        _bckg = generate_rand_bg()
+    elif rand_state < 80:
         _bckg = get_flat_simple_bg(simplest_flat_bg)
     else:
         _bckg = get_simple_bg(simple_bg)
