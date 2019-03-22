@@ -17,5 +17,11 @@ if __name__ == '__main__':
         result = remove_bg(arr)
         new_img = Image.fromarray(result)
         to_ = f'data/face300_mod1/{j:0>3}.jpg'
-        new_img.save(to_)
+
+        w, h = new_img.size
+        new_w, new_h = 682, 768
+        half_crop_w = (w - new_w) / 2
+        new_img_crop = new_img.crop((half_crop_w, 0, w - half_crop_w, new_h))
+
+        new_img_crop.save(to_)
         j += 1
