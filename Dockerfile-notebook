@@ -3,12 +3,14 @@ FROM tensorflow/tensorflow:1.13.1-py3-jupyter
 RUN apt update && apt install -y software-properties-common && \
     add-apt-repository -y ppa:alex-p/tesseract-ocr && apt update
 
-RUN apt install -y libsm6 libxext6 libxrender1 libglib2.0-0 \
+RUN apt install -y git libsm6 libxext6 libxrender1 libglib2.0-0 \
     python3-pil tesseract-ocr tesseract-ocr-eng tesseract-ocr-chi-sim
 
 RUN pip install --no-cache-dir keras imageio tqdm imgaug \
                                opencv-python py-cpuinfo seaborn \
                                pytesseract opencv-python pillow==5.4.1 \
                                jupyterthemes
+
+RUN git clone https://github.com/hardikvasa/google-images-download.git && cd google-images-download && python setup.py install
 
 CMD ["bash", "-c", "source /etc/bash.bashrc && jt -t chesterish && jupyter notebook --notebook-dir=/tf --ip 0.0.0.0 --no-browser --allow-root"]
