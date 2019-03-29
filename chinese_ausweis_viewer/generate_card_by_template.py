@@ -21,11 +21,6 @@ if __name__ == '__main__':
     img = Image.open("data/Chinese_card_constructor.jpg")
     draw = ImageDraw.Draw(img)
 
-    font_path = "data/wts11.ttf"
-    in_font_path = "data/Inconsolata-Regular.ttf"
-    inb_font_path = "data/Inconsolata-Bold.ttf"
-    font = ImageFont.truetype(font_path, 76)
-
     line_len = 11
     address_lines = [
         person.address[i * line_len: (i+1) * line_len]
@@ -33,25 +28,44 @@ if __name__ == '__main__':
         if bool(person.address[i * line_len: (i+1) * line_len])
     ]
 
+    # brush configs
+    color = (200, 0, 0)
+    font_path = "data/wts11.ttf"
+    in_font_path = "data/Inconsolata-Regular.ttf"
+    inb_font_path = "data/Inconsolata-Bold.ttf"
+    font = ImageFont.truetype(font_path, 76)
+    name_font = ImageFont.truetype(font_path, 90)
+    birthday_font = ImageFont.truetype(inb_font_path, 82)
+
     # name
-    draw.text((1010, 560), person.name, (200, 0, 0), font=ImageFont.truetype(font_path, 90))
+    draw.text((1010, 560), person.name, color, font=name_font)
+
     # sex
-    draw.text((1010, 720), person.sex, (200, 0, 0), font=font)
+    draw.text((1010, 720), person.sex, color, font=font)
+
     # nationality
-    draw.text((1460, 720), person.nationality, (200, 0, 0), font=font)
+    draw.text((1460, 720), person.nationality, color, font=font)
+
     # birthday
-    draw.text((1515, 870), str(person.birthday.day), (200, 0, 0), font=ImageFont.truetype(inb_font_path, 82))
-    draw.text((1330, 870), str(person.birthday.month), (200, 0, 0), font=ImageFont.truetype(inb_font_path, 82))
-    draw.text((1040, 870), str(person.birthday.year), (200, 0, 0), font=ImageFont.truetype(inb_font_path, 82))
+    y_birthday = 865
+    draw.text((1040, y_birthday), str(person.birthday.year), color, font=birthday_font)
+    month_str = str(person.birthday.month)
+    x_month = 1330 if len(month_str) == 2 else 1330 + 30
+    draw.text((x_month, y_birthday), month_str, color, font=birthday_font)
+    day_str = str(person.birthday.day)
+    x_day = 1520 if len(day_str) == 2 else 1520 + 30
+    draw.text((x_day, y_birthday), day_str, color, font=birthday_font)
+
     # address
     for i, line in enumerate(address_lines):
-        draw.text((1010, 1040 + i * 100), line, (200, 0, 0), font=font)
+        draw.text((1010, 1040 + i * 100), line, color, font=font)
+
     # id
     for i, digit in enumerate(person.id):
         draw.text(
             (1340 + i * 62, 1420),
             digit,
-            (200, 0, 0),
+            color,
             font=ImageFont.truetype(inb_font_path, 100)
         )
 
