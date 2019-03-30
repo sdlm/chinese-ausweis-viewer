@@ -1,10 +1,21 @@
+from dataclasses import dataclass
 from datetime import date
 
 from PIL import Image
 from PIL import ImageFont
 from PIL import ImageDraw
 
-from .grab_fake_chinese_credentials import Person
+# from .grab_fake_chinese_credentials import Person
+
+
+@dataclass
+class Person:
+    name: str
+    sex: str
+    nationality: str
+    birthday: date
+    address: str
+    id: str
 
 
 if __name__ == '__main__':
@@ -30,7 +41,8 @@ if __name__ == '__main__':
 
     # brush configs
     color = (200, 0, 0)
-    font_path = "data/wts11.ttf"
+    # font_path = "data/wts11.ttf"
+    font_path = "data/MSHEI.ttf"
     in_font_path = "data/Inconsolata-Regular.ttf"
     inb_font_path = "data/Inconsolata-Bold.ttf"
     font = ImageFont.truetype(font_path, 76)
@@ -44,7 +56,7 @@ if __name__ == '__main__':
     draw.text((1010, 720), person.sex, color, font=font)
 
     # nationality
-    draw.text((1460, 720), person.nationality, color, font=font)
+    draw.text((1430, 721), person.nationality, color, font=font)
 
     # birthday
     y_birthday = 865
