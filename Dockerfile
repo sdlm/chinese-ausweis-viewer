@@ -10,6 +10,6 @@ RUN pip install --no-cache-dir keras imageio tqdm imgaug \
                                opencv-python py-cpuinfo seaborn \
                                pytesseract opencv-python pillow==5.4.1 \
                                numpy pandas \
-                               flask gunicorn
+                               flask gunicorn requests lxml
 
 WORKDIR /src

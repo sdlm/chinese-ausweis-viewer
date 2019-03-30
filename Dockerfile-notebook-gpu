@@ -9,7 +9,7 @@ RUN apt install -y git libsm6 libxext6 libxrender1 libglib2.0-0 \
 RUN pip install --no-cache-dir keras imageio tqdm imgaug \
                                opencv-python py-cpuinfo seaborn \
                                pytesseract opencv-python pillow==5.4.1 \
-                               jupyterthemes
+                               jupyterthemes requests lxml
 
 RUN git clone https://github.com/hardikvasa/google-images-download.git && cd google-images-download && python setup.py install
 
