@@ -14,9 +14,11 @@ if __name__ == '__main__':
         except FileNotFoundError:
             continue
         arr = np.array(pic)
-        result = remove_bg(arr)
-        new_img = Image.fromarray(result)
-        to_ = f'data/face300_mod1/{j:0>3}.jpg'
+        result, trash = remove_bg(arr)
+        new_img = Image.fromarray(result, mode='RGB')
+        a_channel = Image.fromarray(trash, mode='L')
+        new_img.putalpha(a_channel)
+        to_ = f'data/face300_mod2/{j:0>3}.png'
 
         w, h = new_img.size
         new_w, new_h = 682, 768
