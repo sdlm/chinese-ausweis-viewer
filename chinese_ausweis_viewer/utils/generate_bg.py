@@ -33,7 +33,7 @@ def admix_flat_bg_by_mask(orig: np.ndarray) -> np.ndarray:
     )
     black = np.zeros(orig.shape, dtype=np.uint8)
     mask = ADMIX_FLAT_BG_BY_MASK_AUG.augment_image(black) / 255.0
-    blended = (1.0 - mask) * orig + mask * img_for_adimx
+    blended = (1.0 - mask) * orig + mask * img_for_adimx  # like PIL.Image.composite()
     np.clip(blended, 0, 1, out=blended)
     return blended
 
