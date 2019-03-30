@@ -1,7 +1,6 @@
-from dataclasses import dataclass
 from typing import List
 from pprint import pprint
-from datetime import date, datetime
+from datetime import datetime
 
 import requests
 from lxml import html
@@ -21,17 +20,16 @@ GENDER_MAPPING = {
     'female': '女',
 }
 
-@dataclass
-class Person:
-    name: str
-    sex: str
-    nationality: str
-    birthday: date
-    address: str
-    id: str
+# format:
+#     name: str
+#     sex: str
+#     nationality: str
+#     birthday: date
+#     address: str
+#     id: str
 
 
-def get_chinese_creds(count: int = 20) -> List[Person]:
+def get_chinese_creds(count: int = 20) -> List[dict]:
     persons = []
     while True:
         response = requests.get(FAKE_CREDENTIALS_URL)
@@ -43,7 +41,7 @@ def get_chinese_creds(count: int = 20) -> List[Person]:
                 for k, v in FIELDS_MAPPING.items()
             }
             persons.append(
-                Person(
+                dict(
                     name=temp['name'],
                     sex=GENDER_MAPPING[temp['sex']],
                     nationality='汉',
