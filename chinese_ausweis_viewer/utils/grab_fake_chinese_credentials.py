@@ -1,5 +1,4 @@
 from typing import List
-from pprint import pprint
 from datetime import datetime
 
 import requests
@@ -20,16 +19,18 @@ GENDER_MAPPING = {
     'female': '女',
 }
 
-# format:
-#     name: str
-#     sex: str
-#     nationality: str
-#     birthday: date
-#     address: str
-#     id: str
-
 
 def get_chinese_creds(count: int = 20) -> List[dict]:
+    """
+    format:
+        name: str
+        sex: str
+        nationality: str
+        birthday: date
+        address: str
+        id: str
+    """
+
     persons = []
     while True:
         response = requests.get(FAKE_CREDENTIALS_URL)
@@ -54,10 +55,5 @@ def get_chinese_creds(count: int = 20) -> List[dict]:
                 break
         if len(persons) == count:
             break
-    return persons 
 
-
-if __name__ == '__main__':
-    persons = get_chinese_creds(100)
-    pprint(persons)
-    print(len(persons))
+    return persons
