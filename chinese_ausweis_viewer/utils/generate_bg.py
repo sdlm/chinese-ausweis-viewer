@@ -16,14 +16,15 @@ ADMIX_FLAT_BG_BY_MASK_AUG = iaa.FrequencyNoiseAlpha(
 )
 
 
-def generate_rand_bg(h_size=256, w_size=256, bg_admix_iters=5):
-    smpl = get_flat_background_with_relative_colors_uniform_distribution(h_size, w_size)
-    
-    for _ in range(randint(1, bg_admix_iters)):
-        smpl = admix_flat_bg_by_mask(smpl)
-    
-    np.clip(smpl * 255, 0, 255, out=smpl)
-    return smpl.astype(np.uint8)
+def get_rand_bg_generator(h_size=256, w_size=256, bg_admix_iters=5):
+    while True:
+        smpl = get_flat_background_with_relative_colors_uniform_distribution(h_size, w_size)
+
+        for _ in range(randint(1, bg_admix_iters)):
+            smpl = admix_flat_bg_by_mask(smpl)
+
+        np.clip(smpl * 255, 0, 255, out=smpl)
+        yield smpl.astype(np.uint8)
 
 
 def admix_flat_bg_by_mask(orig: np.ndarray) -> np.ndarray:

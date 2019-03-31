@@ -1,14 +1,16 @@
+import imageio
 import numpy as np
 from imgaug import augmenters as iaa
 from imgaug import parameters as iap
 
-from .generate_flat_bg import get_flat_simple_bg, get_simple_bg
-from .generate_bg import generate_rand_bg, merge_by_mask
+from .generate_flat_bg import get_flat_simple_bg_generator, get_simple_bg_generator
+from .generate_bg import get_rand_bg_generator, merge_by_mask
 from .helpers import resize_to_256
+from . import configs
 
 
 affine_aug = iaa.Affine(
-    scale=iap.Positive(iap.Normal(1, 0.2)),
+    scale=iap.Clip(iap.Normal(1, 0.15), 0.7, 1.3),
     rotate=iap.Normal(0, 6),
     shear=iap.Normal(0, 6),
     mode='wrap'
@@ -17,7 +19,7 @@ affine_aug = iaa.Affine(
 crop_aug = iaa.Sometimes(
     0.9,
     iaa.Crop(
-        percent=iap.Positive(iap.Normal(0, 0.1)),
+        percent=iap.Clip(iap.Positive(iap.Normal(0, 0.15)), 0, 0.25),
         sample_independently=True,
         keep_size=False
     ),
@@ -63,60 +65,74 @@ random_aug = iaa.Sequential([
 
 
 def get_next_batch(
-    original_mask,
-    original_smpl,
-    simplest_flat_bg,
-    simple_bg,
     batch_size,
-    h_size, 
-    w_size,
+    w_size: int = configs.W_SIZE,
+    h_size: int = configs.H_SIZE,
 ):
-    train_x = np.empty((batch_size, h_size, w_size, 3), dtype='float32')
-    train_y = np.empty((batch_size, h_size, w_size, 1), dtype='float32')
+    # load original images
+    sample_img = imageio.imread(configs.ORIGINAL_SMPL_PATH, pilmode="RGB")
+    original_smpl = np.array(sample_img, dtype=np.uint8)
+
+    mask_img = imageio.imread(configs.ORIGINAL_MASK_PATH, pilmode="RGB", as_gray=True)
+    original_mask = np.array(mask_img, dtype=np.uint8)
+
+    # make train set
+    train_x = np.empty((batch_size, w_size, h_size, 3), dtype='float32')
+    train_y = np.empty((batch_size, w_size, h_size, 1), dtype='float32')
+
+    # make generators
+    bg_generator = get_bg_generator()
+    next_pair_foo = next_pair_generator(original_mask, original_smpl, bg_generator)
+
+    # fill train set
     for i in range(batch_size):
-        img, msk = next_pair(
-            original_mask,
-            original_smpl,
-            simplest_flat_bg,
-            simple_bg,
-        )
+        img, msk = next_pair_foo.__next__()
         train_x[i] = img
         train_y[i] = msk
+
     return train_x, train_y
 
 
-def next_pair(
-    original_mask,
-    original_smpl,
-    simplest_flat_bg,
-    simple_bg,
-):
-    _affine_aug = affine_aug._to_deterministic()
-    _crop_aug = crop_aug._to_deterministic()
+def next_pair_generator(original_mask, original_smpl, bg_generator):
+    while True:
+        _affine_aug = affine_aug._to_deterministic()
+        _crop_aug = crop_aug._to_deterministic()
 
-    _mask = _affine_aug.augment_image(original_mask)
-    _mask = _crop_aug.augment_image(_mask)
-    _mask = resize_to_256(_mask)
+        # prepare mask
+        _mask = _affine_aug.augment_image(original_mask)
+        _mask = _crop_aug.augment_image(_mask)
+        _mask = resize_to_256(_mask)
 
-    _smpl = _affine_aug.augment_image(original_smpl)
-    _smpl = _crop_aug.augment_image(_smpl)
-    _smpl = resize_to_256(_smpl)
+        # prepare card
+        _smpl = _affine_aug.augment_image(original_smpl)
+        _smpl = _crop_aug.augment_image(_smpl)
+        _smpl = resize_to_256(_smpl)
 
-    _smpl = iaa.Add(iap.Normal(0, 10)).augment_image(_smpl)
+        # get background
+        _bckg = bg_generator.__next__()
 
-    rand_state = np.random.randint(low=1, high=100)
-    if rand_state < 60:
-        _bckg = generate_rand_bg()
-    elif rand_state < 80:
-        _bckg = get_flat_simple_bg(simplest_flat_bg)
-    else:
-        _bckg = get_simple_bg(simple_bg)
+        # composite background and card
+        _smpl = merge_by_mask(_bckg, _smpl, _mask)
 
-    _smpl = merge_by_mask(_bckg, _smpl, _mask)
-    _smpl = random_aug.augment_image(_smpl)
+        # make most strong augmentation
+        _smpl = random_aug.augment_image(_smpl)
 
-    _mask = _mask / 255.0
-    _smpl = _smpl / 255.0
+        _mask = _mask / 255.0
+        _smpl = _smpl / 255.0
 
-    _mask = _mask.reshape(256, 256, 1)
-    return _smpl, _mask
+        _mask = _mask.reshape(configs.W_SIZE, configs.H_SIZE, 1)
+        yield _smpl, _mask
+
+
+def get_bg_generator():
+    rand_bg_generator = get_rand_bg_generator()
+    flat_simple_bg_generator = get_flat_simple_bg_generator()
+    simple_bg_generator = get_simple_bg_generator()
+    while True:
+        picker = np.random.randint(low=1, high=100)
+        if picker < 60:
+            yield rand_bg_generator.__next__()
+        elif picker < 80:
+            yield flat_simple_bg_generator.__next__()
+        else:
+            yield simple_bg_generator.__next__()

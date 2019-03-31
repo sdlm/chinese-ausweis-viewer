@@ -1,6 +1,8 @@
+import imageio
 from imgaug import augmenters as iaa
 from imgaug import parameters as iap
 
+from . import configs
 
 aug_for_flat_simple_bg = iaa.Add(
     iap.Normal(0, 10),
@@ -18,7 +20,7 @@ aug_for_simple_bg = iaa.Sequential([
     ),
     iaa.Pad(
         percent=iap.Positive(iap.Normal(0, 0.2)),
-        pad_mode=["wrap"]
+        pad_mode=['wrap']
     ),
     iaa.Affine(
         scale=iap.Positive(iap.Normal(1, 0.1)),
@@ -29,9 +31,13 @@ aug_for_simple_bg = iaa.Sequential([
 ])
 
 
-def get_flat_simple_bg(simplest_flat_bg):
-    return aug_for_flat_simple_bg.augment_image(simplest_flat_bg)
+def get_flat_simple_bg_generator():
+    simplest_flat_bg = imageio.imread(configs.SIMPLEST_FLAT_BG_PATH, pilmode='RGB')
+    while True:
+        yield aug_for_flat_simple_bg.augment_image(simplest_flat_bg)
 
 
-def get_simple_bg(simple_bg):
-    return aug_for_simple_bg.augment_image(simple_bg)
+def get_simple_bg_generator():
+    simple_bg = imageio.imread(configs.SIMPLEST_BG_PATH, pilmode='RGB')
+    while True:
+        yield aug_for_simple_bg.augment_image(simple_bg)
