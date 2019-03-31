@@ -1,3 +1,6 @@
+from typing import Generator
+import numpy as np
+
 import imageio
 from imgaug import augmenters as iaa
 from imgaug import parameters as iap
@@ -31,13 +34,15 @@ aug_for_simple_bg = iaa.Sequential([
 ])
 
 
-def get_flat_simple_bg_generator():
+def get_flat_simple_bg_generator() -> Generator[np.ndarray, None, None]:
     simplest_flat_bg = imageio.imread(configs.SIMPLEST_FLAT_BG_PATH, pilmode='RGB')
     while True:
-        yield aug_for_flat_simple_bg.augment_image(simplest_flat_bg)
+        pic = aug_for_flat_simple_bg.augment_image(simplest_flat_bg)
+        yield np.array(pic)
 
 
-def get_simple_bg_generator():
+def get_simple_bg_generator() -> Generator[np.ndarray, None, None]:
     simple_bg = imageio.imread(configs.SIMPLEST_BG_PATH, pilmode='RGB')
     while True:
-        yield aug_for_simple_bg.augment_image(simple_bg)
+        pic = aug_for_simple_bg.augment_image(simple_bg)
+        yield np.array(pic)

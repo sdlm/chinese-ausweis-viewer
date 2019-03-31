@@ -1,7 +1,11 @@
 from random import randint
+from typing import Generator
+
 import numpy as np
 from imgaug import augmenters as iaa
 from imgaug import parameters as iap
+
+from . import configs
 
 MEAN_FLAT_BG = 128
 VARIANCE_FLAT_BG = MEAN_FLAT_BG * (2/3)  # because we have 3 dimension RGB
@@ -16,7 +20,12 @@ ADMIX_FLAT_BG_BY_MASK_AUG = iaa.FrequencyNoiseAlpha(
 )
 
 
-def get_rand_bg_generator(h_size=256, w_size=256, bg_admix_iters=5):
+def get_rand_bg_generator(
+        h_size: int = configs.H_SIZE,
+        w_size: int = configs.W_SIZE,
+        bg_admix_iters: int = 5
+) -> Generator[np.ndarray, None, None]:
+
     while True:
         smpl = get_flat_background_with_relative_colors_uniform_distribution(h_size, w_size)
 
@@ -71,7 +80,7 @@ def _get_flat_background(h_size, w_size, colors):
     r = np.full((h_size, w_size), colors[0])
     g = np.full((h_size, w_size), colors[1])
     b = np.full((h_size, w_size), colors[2])
-    return np.dstack([r,g,b])
+    return np.dstack([r, g, b])
 
 
 def merge_by_mask(background, foreground, mask):
