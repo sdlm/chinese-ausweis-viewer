@@ -36,10 +36,19 @@ def get_all_bad_filenames(dirpath: str) -> List[str]:
 
 
 def rm_bad_files_from_gi_images(dirpath: str):
+    # rm files wich we can't open
     bad_file_path_list = get_all_bad_filenames(dirpath)
-
     for path in bad_file_path_list:
         os.remove(path)
+
+    # rm not jpg files
+    path_list = [
+        os.path.join(dirpath, filename)
+        for filename in os.listdir(dirpath)
+    ]
+    for path in path_list:
+        if path[-4:] != '.jpg' and path[-5:] != '.jpeg':
+            os.remove(path)
 
 
 if __name__ == '__main__':
