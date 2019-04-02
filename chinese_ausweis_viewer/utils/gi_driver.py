@@ -43,3 +43,11 @@ def get_keywords():
         for prefix in prefixes
         for word in words
     ]
+
+
+if __name__ == '__main__':
+    load_images_multiprocessing(
+        output_directory='../data/images',
+        process_count=8,
+        batch_size=100
+    )
