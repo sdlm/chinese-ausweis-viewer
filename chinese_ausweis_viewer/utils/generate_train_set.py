@@ -4,7 +4,7 @@ import numpy as np
 from imgaug import augmenters as iaa
 from imgaug import parameters as iap
 
-from .generate_flat_bg import get_flat_simple_bg_generator, get_simple_bg_generator
+from . import generate_flat_bg
 from .generate_bg import get_rand_bg_generator, merge_by_mask
 from .helpers import resize_to_256
 from . import configs
@@ -138,13 +138,16 @@ def next_pair_generator(
 
 def get_bg_generator() -> Generator[np.ndarray, None, None]:
     rand_bg_generator = get_rand_bg_generator()
-    flat_simple_bg_generator = get_flat_simple_bg_generator()
-    simple_bg_generator = get_simple_bg_generator()
+    flat_simple_bg_generator = generate_flat_bg.get_flat_simple_bg_generator()
+    simple_bg_generator = generate_flat_bg.get_simple_bg_generator()
+    bg_from_gi_generator = generate_flat_bg.get_bg_from_gi_generator()
     while True:
         picker = np.random.randint(low=1, high=100)
         if picker < 60:
+            yield bg_from_gi_generator.__next__()
+        elif picker < 90:
             yield rand_bg_generator.__next__()
-        elif picker < 80:
+        elif picker < 95:
             yield flat_simple_bg_generator.__next__()
         else:
             yield simple_bg_generator.__next__()
