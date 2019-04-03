@@ -10,3 +10,4 @@ FACE_DIR_PATH = 'data/face300_mod2/'
 TRUE_MASK_PATH = 'data/Chinese_card_constructor_mask.png'
 
 W_SIZE = H_SIZE = 256
+START_NEURONS = 4

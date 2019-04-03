@@ -7,6 +7,8 @@ from keras.losses import binary_crossentropy
 from keras.optimizers import Adam
 from keras.utils.generic_utils import get_custom_objects
 
+from . import configs
+
 
 def dice_coef(y_true, y_pred):
     y_true_f = K.flatten(y_true)
@@ -130,7 +132,11 @@ def build_model(input_layer, start_neurons):
     return output_layer
 
 
-def get_compiled_model(h_size, w_size, start_neurons):
+def get_compiled_model(
+        start_neurons: int = configs.START_NEURONS,
+        h_size: int = configs.H_SIZE,
+        w_size: int = configs.H_SIZE,
+) -> Model:
     setup_custom_metric()
 
     input_layer = Input((h_size, w_size, 3))

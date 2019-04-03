@@ -66,27 +66,16 @@ random_aug = iaa.Sequential([
 ])
 
 
-def get_next_batch(
-    batch_size,
-    w_size: int = configs.W_SIZE,
-    h_size: int = configs.H_SIZE,
-):
-    # load original images
-    # sample_img = imageio.imread(configs.ORIGINAL_SMPL_PATH, pilmode="RGB")
-    # original_smpl = np.array(sample_img, dtype=np.uint8)
-    #
-    # mask_img = imageio.imread(configs.ORIGINAL_MASK_PATH, pilmode="RGB", as_gray=True)
-    # original_mask = np.array(mask_img, dtype=np.uint8)
-
+def get_next_batch(batch_size: int, only_gi_bg: bool = False) -> Tuple[np.ndarray, np.ndarray]:
     original_mask = get_true_mask()
     card_generator = get_card_generator()
 
     # make train set
-    train_x = np.empty((batch_size, w_size, h_size, 3), dtype='float32')
-    train_y = np.empty((batch_size, w_size, h_size, 1), dtype='float32')
+    train_x = np.empty((batch_size, configs.W_SIZE, configs.H_SIZE, 3), dtype='float32')
+    train_y = np.empty((batch_size, configs.W_SIZE, configs.H_SIZE, 1), dtype='float32')
 
     # make generators
-    bg_generator = get_bg_generator()
+    bg_generator = generate_flat_bg.get_bg_from_gi_generator() if only_gi_bg else get_bg_generator()
     next_pair_foo = next_pair_generator(original_mask, bg_generator, card_generator)
 
     # fill train set

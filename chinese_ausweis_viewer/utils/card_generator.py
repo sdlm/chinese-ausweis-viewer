@@ -1,6 +1,6 @@
 from typing import List, Generator
 
-from random import randint
+from random import randint, choice
 import numpy as np
 
 import PIL
@@ -10,6 +10,8 @@ from PIL import ImageDraw
 
 from .grab_fake_chinese_credentials import get_chinese_creds
 from . import configs
+
+FACES_COUNT = 267
 
 
 def get_true_mask() -> np.ndarray:
@@ -23,19 +25,18 @@ def get_card_generator(
         template_path: str = configs.CARD_TEMPLATE_PATH,
         face_dir_path: str = configs.FACE_DIR_PATH
 ) -> Generator[np.ndarray, None, None]:
-    template = Image.open(template_path)
+    card_with_face_pool = get_card_with_face_pool(template_path, face_dir_path)
     batch_size = 35
     while True:
         creds = get_chinese_creds(batch_size)
         colors = get_batch_of_color(batch_size)
         for i, cred in enumerate(creds):
-            template_ = template.copy()
-            template_ = add_creds(template_, cred, colors[i])
-            template_ = add_face(template_, face_dir_path)
+            card_with_face = choice(card_with_face_pool).copy()
+            complete_card = add_creds(card_with_face, cred, colors[i])
             card_canvas = Image.new('RGBA', (3360, 3360), (0, 0, 0, 0))
             card_canvas.paste(
-                template_,
-                box=(0, 660, template_.size[0], template_.size[1] + 660)
+                complete_card,
+                box=(0, 660, complete_card.size[0], complete_card.size[1] + 660)
             )
             yield np.array(card_canvas)
 
@@ -45,7 +46,7 @@ def get_batch_of_color(count: int) -> List[tuple]:
     return list(zip(r, g, b))
 
 
-def add_creds(template: PIL.Image, person: dict, color: tuple) -> PIL.Image:
+def add_creds(template: PIL.Image.Image, person: dict, color: tuple) -> PIL.Image.Image:
     draw = ImageDraw.Draw(template)
 
     line_len = 11
@@ -97,10 +98,23 @@ def add_creds(template: PIL.Image, person: dict, color: tuple) -> PIL.Image:
     return template
 
 
-def add_face(img: PIL.Image, face_dir_path: str) -> PIL.Image:
+def get_card_with_face_pool(
+        template_path: str = configs.CARD_TEMPLATE_PATH,
+        face_dir_path: str = configs.FACE_DIR_PATH,
+) -> List[PIL.Image.Image]:
+    template = Image.open(template_path)
+    face_pool = []
+    for face_number in range(1, FACES_COUNT + 1):
+        template_ = template.copy()
+        template_ = add_face(template_, face_dir_path, face_number=face_number)
+        face_pool.append(template_)
+    return face_pool
+
+
+def add_face(img: PIL.Image.Image, face_dir_path: str, *, face_number: int = None) -> PIL.Image.Image:
     face_path = '{face_dir_path}{number:0>3}.png'.format(
         face_dir_path=face_dir_path,
-        number=randint(1, 267)
+        number=face_number or randint(1, FACES_COUNT)
     )
     face = Image.open(face_path)
     face = crop_img(face, 50)
@@ -110,12 +124,12 @@ def add_face(img: PIL.Image, face_dir_path: str) -> PIL.Image:
     return Image.alpha_composite(img, temp)
 
 
-def crop_img(img: PIL.Image, value: int) -> PIL.Image:
+def crop_img(img: PIL.Image.Image, value: int) -> PIL.Image.Image:
     return img.crop(
         (value, value, img.size[0] - value, img.size[1] - value)
     )
 
 
-def resize_to_width(img: PIL.Image, width: int) -> PIL.Image:
+def resize_to_width(img: PIL.Image.Image, width: int) -> PIL.Image.Image:
     height = int(img.size[1] * (620.0 / img.size[0]))
     return img.resize((width, height), PIL.Image.ANTIALIAS)
