@@ -1,8 +1,9 @@
-from typing import Generator, Tuple
+from typing import Generator, Tuple, List
 
 import numpy as np
 from imgaug import augmenters as iaa
 from imgaug import parameters as iap
+from PIL.Image import Image as Image_cls
 
 from . import generate_flat_bg
 from .generate_bg import get_rand_bg_generator, merge_by_mask
@@ -33,11 +34,7 @@ random_aug = iaa.Sequential([
         0.5,
         iaa.OneOf([
             # Small blur
-            iaa.OneOf([
-                iaa.GaussianBlur(sigma=(0, 0.8)),
-                iaa.AverageBlur(k=(0, 2)),
-                iaa.MedianBlur(k=(1, 3)),
-            ]),
+            iaa.GaussianBlur(sigma=(0, 1)),
 
             # Strengthen or weaken the contrast in each image.
             iaa.ContrastNormalization((0.9, 1.1)),
@@ -57,7 +54,7 @@ random_aug = iaa.Sequential([
         0.4,
         # Augmenter that sets rectangular areas within images to zero.
         iaa.CoarseDropout(
-            (0, 0.2),
+            (0, 0.3),
             size_percent=(0.02, 0.3),
             per_channel=0.5
         ),
@@ -66,9 +63,29 @@ random_aug = iaa.Sequential([
 ])
 
 
-def get_next_batch(batch_size: int, only_gi_bg: bool = False) -> Tuple[np.ndarray, np.ndarray]:
+card_blur_aug = iaa.Sequential([
+    iaa.Sometimes(
+        0.5,
+        iaa.GaussianBlur(sigma=iap.Normal(0, 10))
+    ),
+    iaa.Sometimes(
+        0.5,
+        iaa.Add(
+            iap.Normal(0, 20),
+            per_channel=0.8
+        ),
+    ),
+])
+
+
+def get_next_batch(
+        face_pool: List[Image_cls],
+        batch_size: int,
+        only_gi_bg: bool = False
+) -> Tuple[np.ndarray, np.ndarray]:
+
     original_mask = get_true_mask()
-    card_generator = get_card_generator()
+    card_generator = get_card_generator(face_pool)
 
     # make train set
     train_x = np.empty((batch_size, configs.W_SIZE, configs.H_SIZE, 3), dtype='float32')
@@ -103,6 +120,7 @@ def next_pair_generator(
         _mask = resize_to_256(_mask)
 
         card_smpl = card_generator.__next__()
+        card_smpl = card_blur_aug.augment_image(card_smpl)
 
         # prepare card
         _smpl = _affine_aug.augment_image(card_smpl)

@@ -1,12 +1,11 @@
 from typing import List, Generator
-
-from random import randint
+from random import randint, choice
 import numpy as np
 
 from PIL import Image
-from PIL.Image import Image as Image_cls
 from PIL import ImageFont
 from PIL import ImageDraw
+from PIL.Image import Image as Image_cls
 
 from .grab_fake_chinese_credentials import get_chinese_creds
 from . import configs
@@ -20,8 +19,8 @@ def get_true_mask() -> np.ndarray:
 
 
 def get_card_generator(
+        face_pool: List[Image_cls],
         template_path: str = configs.CARD_TEMPLATE_PATH,
-        face_dir_path: str = configs.FACE_DIR_PATH
 ) -> Generator[np.ndarray, None, None]:
     template = Image.open(template_path)
     batch_size = 35
@@ -30,8 +29,8 @@ def get_card_generator(
         colors = get_batch_of_color(batch_size)
         for i, cred in enumerate(creds):
             template_ = template.copy()
+            template_ = add_face(template_, face_pool)
             template_ = add_creds(template_, cred, colors[i])
-            template_ = add_face(template_, face_dir_path)
             card_canvas = Image.new('RGBA', (3360, 3360), (0, 0, 0, 0))
             card_canvas.paste(
                 template_,
@@ -97,17 +96,27 @@ def add_creds(template: Image_cls, person: dict, color: tuple) -> Image_cls:
     return template
 
 
-def add_face(img: Image_cls, face_dir_path: str) -> Image_cls:
-    face_path = '{face_dir_path}{number:0>3}.png'.format(
-        face_dir_path=face_dir_path,
-        number=randint(1, 267)
-    )
-    face = Image.open(face_path)
-    face = crop_img(face, 50)
-    face = resize_to_width(face, 620)
-    temp = Image.new('RGBA', img.size, 0)
-    temp.paste(face, (1894, 623))
-    return Image.alpha_composite(img, temp)
+def add_face(img: Image_cls, face_pool: List[Image_cls]) -> Image_cls:
+    face = choice(face_pool)
+
+    # some times flip horizontally
+    if randint(1, 10) > 5:
+        face = face.transpose(Image.FLIP_LEFT_RIGHT)
+
+    # composite with input image
+    canvas = Image.new('RGBA', img.size, 0)
+    canvas.paste(face, (1894, 623))  # add face
+    return Image.alpha_composite(img, canvas)
+
+
+def get_face_pool(face_dir_path: str = configs.FACE_DIR_PATH) -> List[Image_cls]:
+    pool = []
+    for i in range(1, configs.FACE_COUNT + 1):
+        img = Image.open('{path}{num:0>3}.png'.format(path=face_dir_path, num=i))
+        img = crop_img(img, 50)
+        img = resize_to_width(img, 620)
+        pool.append(img)
+    return pool
 
 
 def crop_img(img: Image_cls, value: int) -> Image_cls:
