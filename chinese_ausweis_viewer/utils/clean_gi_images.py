@@ -1,40 +1,43 @@
 import os
+import uuid
 import multiprocessing as mp
 from typing import List
 
 import imageio
 
 
-def rm_bad_files_from_gi_images(dirpath: str):
-    """Remove files wich we can't open"""
-    bad_file_path_list = get_all_bad_filenames(dirpath)
-    for path in bad_file_path_list:
-        print(path)
-        # os.remove(path)
-
-
-def get_all_bad_filenames(dirpath: str) -> List[str]:
-    path_list = [
-        os.path.join(dirpath, filename)
-        for filename in os.listdir(dirpath)
-    ]
-    path_chunk_list = list(chunks(path_list, 100))
-    with mp.Pool(mp.cpu_count()) as p:
-        bad_img_path_chunk_list = p.map(try_load_images, path_chunk_list)
-
-    return [x for p_list in bad_img_path_chunk_list for x in p_list]
-
-
-def try_load_images(path_list: str) -> List[str]:
-    bad_img_path_list = []
-    for path in path_list:
+def try_load_images(from_dir: str, to_dir: str, filenames: List[str]):
+    print('try_load_images')
+    for filename in filenames:
+        print(filename)
+        path = os.path.join(from_dir, filename)
         try:
-            imageio.imread(path, pilmode="RGB")
+            img = imageio.imread(path, pilmode="RGB")
         except:
-            bad_img_path_list.append(path)
+            print('rm %s' % path)
+            os.remove(path)
         else:
-            continue
-    return bad_img_path_list
+            new_filename = '%s.jpg' % uuid.uuid4().hex
+            new_path = os.path.join(to_dir, new_filename)
+            imageio.imwrite(new_path, img)
+
+
+def rm_bad_files_from_gi_images(from_dir: str, to_dir: str):
+    """Remove files wich we can't open"""
+    print(0)
+    filename_list = os.listdir(from_dir)
+    filename_chunk_list = list(chunks(filename_list, 100))
+    print(1)
+    with mp.Pool(mp.cpu_count()) as pool:
+        pool.apply_async(
+            try_load_images,
+            args=(
+                from_dir,
+                to_dir,
+                filename_chunk_list
+            )
+        )
+        # p.map(try_load_images, path_chunk_list)
 
 
 def rm_by_extension(dirpath: str):
@@ -55,6 +58,7 @@ def chunks(list_, size):
 
 
 if __name__ == '__main__':
-    dirpath = '../data/images'
-    rm_bad_files_from_gi_images(dirpath)
+    from_dir = '../data/images'
+    to_dir = '../data/clear_images'
+    rm_bad_files_from_gi_images(from_dir, to_dir)
     # rm_by_extension(dirpath)
