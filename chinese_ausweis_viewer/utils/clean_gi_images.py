@@ -7,7 +7,6 @@ import imageio
 
 
 def try_load_images(from_dir: str, to_dir: str, filenames: List[str]):
-    print('try_load_images')
     for filename in filenames:
         print(filename)
         path = os.path.join(from_dir, filename)
@@ -24,20 +23,21 @@ def try_load_images(from_dir: str, to_dir: str, filenames: List[str]):
 
 def rm_bad_files_from_gi_images(from_dir: str, to_dir: str):
     """Remove files wich we can't open"""
-    print(0)
     filename_list = os.listdir(from_dir)
-    filename_chunk_list = list(chunks(filename_list, 100))
-    print(1)
     with mp.Pool(mp.cpu_count()) as pool:
-        pool.apply_async(
-            try_load_images,
-            args=(
-                from_dir,
-                to_dir,
-                filename_chunk_list
+        coros = [
+            pool.apply_async(
+                try_load_images,
+                args=(
+                    from_dir,
+                    to_dir,
+                    filename_chunk
+                )
             )
-        )
-        # p.map(try_load_images, path_chunk_list)
+            for filename_chunk in chunks(filename_list, 100)
+        ]
+        _ = [c.get() for c in coros]
+    # p.map(try_load_images, path_chunk_list)
 
 
 def rm_by_extension(dirpath: str):
