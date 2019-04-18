@@ -1,4 +1,5 @@
 import io
+import os
 
 import pandas as pd
 import numpy as np
@@ -12,7 +13,7 @@ from .unet import get_compiled_model
 
 h_size = 256
 w_size = 256
-start_neurons = 16
+start_neurons = 4
 
 
 def load_boxes():
@@ -38,9 +39,9 @@ boxes = load_boxes()
 
 
 def get_model():
-    model = get_compiled_model(h_size, w_size, start_neurons)
-    model.load_weights('./src/data/weights/model_v1.h5')
-    # model.load_weights('./src/data/weights/n8/w_n8_002.h5')
+    model = get_compiled_model(start_neurons, h_size, w_size)
+    # model.load_weights('/src/data/weights/model_v1.h5')
+    model.load_weights('/src/data/weights/n4/w_n4_002.h5')
     return model
 
 
