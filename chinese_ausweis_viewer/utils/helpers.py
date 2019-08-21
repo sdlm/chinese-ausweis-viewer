@@ -26,6 +26,10 @@ def resize_to_256(nd_array: np.ndarray) -> np.ndarray:
     return resize_to(nd_array, 256, 256)
 
 
+def resize_to_128(nd_array: np.ndarray) -> np.ndarray:
+    return resize_to(nd_array, 128, 128)
+
+
 def resize_to(nd_array: np.ndarray, width: int, heigh: int) -> np.ndarray:
     im = Image.fromarray(nd_array)
     orig_width, orig_height = im.size
