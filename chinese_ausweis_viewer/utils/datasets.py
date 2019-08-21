@@ -50,7 +50,8 @@ class ChineseCardDataset(data.Dataset):
             for i in range(count)
         ]
         # noinspection PyTypeChecker
-        self.labels = [np.loadtxt(open(f"data/trainset_128/{i:0>7}.csv", "rb"), delimiter=",") for i in range(count)]
+        all_coords = np.loadtxt(open(f"data/trainset_128/coords.csv", "rb"), delimiter=",").astype(dtype=np.float32)
+        self.labels = [all_coords[i] for i in range(count)]
         time_elapsed = time.time() - start_time
         print('samples loading elapsed: {:.0f}m {:.0f}s'.format(time_elapsed // 60, time_elapsed % 60))
 

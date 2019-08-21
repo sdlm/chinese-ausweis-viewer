@@ -1,3 +1,4 @@
+import argparse
 import copy
 import time
 
@@ -5,12 +6,15 @@ import torch
 from torch import nn, optim, cuda
 from torch.utils import data
 from torch.utils.tensorboard import SummaryWriter
+from torchvision import models
 
 from utils import classes, datasets
 
+MAX_SAMPLES_COUNT = 57668
 TRAIN_COUNT = 15000
 TEST_COUNT = 1500
-EPOCHS_COUNT = 10
+EPOCHS_COUNT = 60
+NUM_CLASSES = 8
 
 
 # Detect if we have a GPU available
@@ -48,7 +52,7 @@ def train_model(model, dataloaders, criterion, optimizer, scheduler, num_epochs=
             for inputs, labels in dataloaders[phase]:
                 # move to device
                 inputs = inputs.to(device)
-                labels = [l.float().to(device) for l in labels]
+                labels = labels.T.to(device)
 
                 # zero the parameter gradients
                 optimizer.zero_grad()
@@ -111,7 +115,89 @@ def train_model(model, dataloaders, criterion, optimizer, scheduler, num_epochs=
     return model, val_acc_history
 
 
+def parse_arguments():
+    messages = {
+        "cnn": "Use Convolution network",
+        "resnet": "Use pretrained Resnet-18 network",
+        "resnet18": "Use pretrained Resnet-18 network",
+        "resnet34": "Use pretrained Resnet-34 network",
+        "resnet50": "Use pretrained Resnet-50 network",
+        "resnet101": "Use pretrained Resnet-101 network",
+        "resnet152": "Use pretrained Resnet-152 network",
+    }
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--cnn", help=messages["cnn"], action="store_true")
+    parser.add_argument("--resnet", help=messages["resnet"], action="store_true")
+    parser.add_argument("--resnet18", help=messages["resnet18"], action="store_true")
+    parser.add_argument("--resnet34", help=messages["resnet34"], action="store_true")
+    parser.add_argument("--resnet50", help=messages["resnet50"], action="store_true")
+    parser.add_argument("--resnet101", help=messages["resnet101"], action="store_true")
+    parser.add_argument("--resnet152", help=messages["resnet152"], action="store_true")
+    args = parser.parse_args()
+    if args.cnn:
+        print(messages["cnn"])
+        return "CNN"
+    if args.resnet:
+        print(messages["resnet"])
+        return "resnet18"
+    if args.resnet18:
+        print(messages["resnet18"])
+        return "resnet18"
+    if args.resnet34:
+        print(messages["resnet34"])
+        return "resnet34"
+    if args.resnet50:
+        print(messages["resnet50"])
+        return "resnet50"
+    if args.resnet101:
+        print(messages["resnet101"])
+        return "resnet101"
+    if args.resnet152:
+        print(messages["resnet152"])
+        return "resnet152"
+    return "CNN"
+
+
+def get_model(arch: str):
+    net = None
+    if arch == "CNN":
+        net = classes.ConvNet(first_conv=32, first_fc=2048, fc=8)
+    if arch == "resnet18":
+        net = models.resnet18(pretrained=True)
+    if arch == "resnet18":
+        net = models.resnet18(pretrained=True)
+    if arch == "resnet34":
+        net = models.resnet34(pretrained=True)
+    if arch == "resnet50":
+        net = models.resnet50(pretrained=True)
+    if arch == "resnet101":
+        net = models.resnet101(pretrained=True)
+    if arch == "resnet152":
+        net = models.resnet152(pretrained=True)
+
+    if net is None:
+        raise Exception('No valid network architecture selected')
+
+    if arch.startswith("resnet"):
+        # freeze weights
+        freeze_model(net)
+
+        # setup last layer with current number of classes
+        num_ftrs = net.fc.in_features
+        net.fc = nn.Linear(num_ftrs, NUM_CLASSES)
+
+    net = net.to(device)
+    return net
+
+
+def freeze_model(model):
+    for param in model.parameters():
+        param.requires_grad = False
+
+
 if __name__ == "__main__":
+
+    arch = parse_arguments()
 
     if cuda.is_available():
         print("USE GPU")
@@ -123,9 +209,10 @@ if __name__ == "__main__":
         x: data.DataLoader(image_datasets[x], batch_size=64, shuffle=True, num_workers=4) for x in ["train", "val"]
     }
 
-    model = classes.ConvNet(first_conv=32, first_fc=2048, fc=8).to(device)
-    criterion = nn.L1Loss()
-    optimizer = optim.SGD(model.parameters(), lr=0.02, momentum=0.9)
-    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.5)
+    model = get_model(arch)
 
-    train_model(model, dataloaders, criterion, optimizer, scheduler, num_epochs=60)
+    criterion = nn.L1Loss()
+    optimizer = optim.SGD(model.parameters(), lr=0.05, momentum=0.9)
+    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=4, gamma=0.5)
+
+    train_model(model, dataloaders, criterion, optimizer, scheduler, num_epochs=EPOCHS_COUNT)
