@@ -11,10 +11,11 @@ from torchvision import models
 from utils import classes, datasets
 
 MAX_SAMPLES_COUNT = 57668
-TRAIN_COUNT = 15000
-TEST_COUNT = 1500
-EPOCHS_COUNT = 60
+TRAIN_COUNT = 30000
+TEST_COUNT = 0
+EPOCHS_COUNT = 600
 NUM_CLASSES = 8
+MODEL_PATH = './data/weights/resnet_regression_v004,pt'
 
 
 # Detect if we have a GPU available
@@ -36,7 +37,7 @@ def train_model(model, dataloaders, criterion, optimizer, scheduler, num_epochs=
         # print('-' * 10)
 
         # Each epoch has a training and validation phase
-        for phase in ["train", 'val']:  # , 'val'
+        for phase in ["train"]:  # , 'val'
             if phase == "train":
                 model.train()  # Set model to training mode
             else:
@@ -102,6 +103,8 @@ def train_model(model, dataloaders, criterion, optimizer, scheduler, num_epochs=
             #     best_model_wts = copy.deepcopy(model.state_dict())
             # if phase == 'val':
             #     val_acc_history.append(epoch_acc)
+
+            torch.save(model.state_dict(), MODEL_PATH)
 
         # print()
 
@@ -204,15 +207,15 @@ if __name__ == "__main__":
         torch.cuda.empty_cache()
 
     dataset_params = {"train": TRAIN_COUNT, "val": TEST_COUNT}
-    image_datasets = {x: datasets.ChineseCardDataset(dataset_params[x]) for x in ["train", "val"]}
+    image_datasets = {x: datasets.ChineseCardDataset(dataset_params[x]) for x in ["train"]}  # , "val"
     dataloaders = {
-        x: data.DataLoader(image_datasets[x], batch_size=64, shuffle=True, num_workers=4) for x in ["train", "val"]
+        x: data.DataLoader(image_datasets[x], batch_size=64, shuffle=True, num_workers=4) for x in ["train"]
     }
 
     model = get_model(arch)
 
     criterion = nn.L1Loss()
-    optimizer = optim.SGD(model.parameters(), lr=0.05, momentum=0.9)
-    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=4, gamma=0.5)
+    optimizer = optim.SGD(model.parameters(), lr=0.5, momentum=0.9)
+    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.5)
 
-    train_model(model, dataloaders, criterion, optimizer, scheduler, num_epochs=EPOCHS_COUNT)
+    train_model(model, dataloaders, criterion, optimizer, scheduler, num_epochs=EPOCHS_COUNT)  # EPOCHS_COUNT
