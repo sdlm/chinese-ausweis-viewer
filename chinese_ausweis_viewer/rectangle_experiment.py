@@ -11,21 +11,22 @@ from torchvision import models
 from utils import classes, datasets
 
 MAX_SAMPLES_COUNT = 57668
-TRAIN_COUNT = 30000
+TRAIN_COUNT = 2 ** 15
 TEST_COUNT = 0
-EPOCHS_COUNT = 600
+EPOCHS_COUNT = 20
 NUM_CLASSES = 8
-MODEL_PATH = './data/weights/resnet_regression_v004,pt'
+MODEL_PATH = './data/weights/{arch}_regression_v2_temp.pt'
+MODEL_PATH_CHECKPOINT = './data/weights/{arch}_regression_v2.2.{checkpoint}.pt'
 
 
 # Detect if we have a GPU available
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 
-def train_model(model, dataloaders, criterion, optimizer, scheduler, num_epochs=25):
+def train_model(model, dataloaders, criterion, optimizer, scheduler, num_epochs=25, arch: str = None):
     since = time.time()
     writer = SummaryWriter()
-    mse_criterion = nn.MSELoss()
+    # mse_criterion = nn.MSELoss()
 
     val_acc_history = []
 
@@ -69,7 +70,7 @@ def train_model(model, dataloaders, criterion, optimizer, scheduler, num_epochs=
                     for k, predict_coord in enumerate(predict_coords):
                         true_coord = labels[k].unsqueeze(1)
                         joint_loss += 1/8.0 * criterion(predict_coord, true_coord)
-                        mse_loss += 1/8.0 * mse_criterion(predict_coord, true_coord)
+                        # mse_loss += 1/8.0 * mse_criterion(predict_coord, true_coord)
 
                     # _, preds = torch.max(outputs, 1)
 
@@ -81,11 +82,12 @@ def train_model(model, dataloaders, criterion, optimizer, scheduler, num_epochs=
 
                 # statistics
                 running_loss += joint_loss.item() * inputs.size(0)
-                running_mse_loss += mse_loss.item() * inputs.size(0)
+                # running_mse_loss += mse_loss.item() * inputs.size(0)
                 # running_corrects += torch.sum(preds == labels.data)
 
             epoch_loss = running_loss / len(dataloaders[phase].dataset)
-            epoch_mse_loss = running_mse_loss / len(dataloaders[phase].dataset)
+            # epoch_mse_loss = running_mse_loss / len(dataloaders[phase].dataset)
+            epoch_mse_loss = 0
             # epoch_acc = running_corrects.double() / len(dataloaders[phase].dataset)
 
             # print('{} Loss: {:.4f} Acc: {:.4f}'.format(phase, epoch_loss, epoch_acc))
@@ -94,8 +96,9 @@ def train_model(model, dataloaders, criterion, optimizer, scheduler, num_epochs=
                     epoch, phase, epoch_loss, epoch_mse_loss
                 )
             )
-            writer.add_scalar(f'L1Loss/{phase}', epoch_loss, epoch)
-            writer.add_scalar(f'MSELoss/{phase}', epoch_mse_loss, epoch)
+            # writer.add_scalar(f'L1Loss/{phase}', epoch_loss, epoch)
+            # writer.add_scalar(f'MSELoss/{phase}', epoch_mse_loss, epoch)
+            writer.add_scalar(f'MSELoss/{phase}', epoch_loss, epoch)
 
             # deep copy the model
             # if phase == 'val' and epoch_acc > best_acc:
@@ -104,7 +107,7 @@ def train_model(model, dataloaders, criterion, optimizer, scheduler, num_epochs=
             # if phase == 'val':
             #     val_acc_history.append(epoch_acc)
 
-            torch.save(model.state_dict(), MODEL_PATH)
+            torch.save(model.state_dict(), MODEL_PATH.format(arch=arch))
 
         # print()
 
@@ -121,6 +124,7 @@ def train_model(model, dataloaders, criterion, optimizer, scheduler, num_epochs=
 def parse_arguments():
     messages = {
         "cnn": "Use Convolution network",
+        "cnn4": "Use Convolution-5 network",
         "resnet": "Use pretrained Resnet-18 network",
         "resnet18": "Use pretrained Resnet-18 network",
         "resnet34": "Use pretrained Resnet-34 network",
@@ -130,6 +134,7 @@ def parse_arguments():
     }
     parser = argparse.ArgumentParser()
     parser.add_argument("--cnn", help=messages["cnn"], action="store_true")
+    parser.add_argument("--cnn4", help=messages["cnn4"], action="store_true")
     parser.add_argument("--resnet", help=messages["resnet"], action="store_true")
     parser.add_argument("--resnet18", help=messages["resnet18"], action="store_true")
     parser.add_argument("--resnet34", help=messages["resnet34"], action="store_true")
@@ -139,7 +144,10 @@ def parse_arguments():
     args = parser.parse_args()
     if args.cnn:
         print(messages["cnn"])
-        return "CNN"
+        return "CNN-2"
+    if args.cnn4:
+        print(messages["cnn4"])
+        return "CNN-4"
     if args.resnet:
         print(messages["resnet"])
         return "resnet18"
@@ -158,13 +166,23 @@ def parse_arguments():
     if args.resnet152:
         print(messages["resnet152"])
         return "resnet152"
-    return "CNN"
+    return "CNN-2"
 
 
 def get_model(arch: str):
     net = None
-    if arch == "CNN":
-        net = classes.ConvNet(first_conv=32, first_fc=2048, fc=8)
+    if arch == "CNN-2":
+        net = classes.ConvNet2(first_conv=32, first_fc=2048, fc=8)
+        # path = MODEL_PATH.format(arch=arch)
+        # net.load_state_dict(torch.load(path))
+        # print(f'Succesfully load weights from {path}')
+        # net.eval()
+    if arch == "CNN-4":
+        net = classes.ConvNet4(first_conv=32, first_fc=2048, fc=8)
+        # path = MODEL_PATH.format(arch=arch)
+        # net.load_state_dict(torch.load(path))
+        # print(f'Succesfully load weights from {path}')
+        # net.eval()
     if arch == "resnet18":
         net = models.resnet18(pretrained=True)
     if arch == "resnet18":
@@ -183,11 +201,16 @@ def get_model(arch: str):
 
     if arch.startswith("resnet"):
         # freeze weights
-        freeze_model(net)
+        freeze_layers(net, 7)
 
         # setup last layer with current number of classes
         num_ftrs = net.fc.in_features
         net.fc = nn.Linear(num_ftrs, NUM_CLASSES)
+
+        # path = MODEL_PATH.format(arch=arch)
+        # net.load_state_dict(torch.load(path))
+        # print(f'Succesfully load weights from {path}')
+        # net.eval()
 
     net = net.to(device)
     return net
@@ -196,6 +219,14 @@ def get_model(arch: str):
 def freeze_model(model):
     for param in model.parameters():
         param.requires_grad = False
+
+
+def freeze_layers(model, count):
+    for k, child in enumerate(model.children()):
+        if k == count:
+            break
+        for param in child.parameters():
+            param.requires_grad = False
 
 
 if __name__ == "__main__":
@@ -209,13 +240,21 @@ if __name__ == "__main__":
     dataset_params = {"train": TRAIN_COUNT, "val": TEST_COUNT}
     image_datasets = {x: datasets.ChineseCardDataset(dataset_params[x]) for x in ["train"]}  # , "val"
     dataloaders = {
-        x: data.DataLoader(image_datasets[x], batch_size=64, shuffle=True, num_workers=4) for x in ["train"]
+        x: data.DataLoader(image_datasets[x], batch_size=512+128+64, shuffle=True, num_workers=4) for x in ["train"]
     }
+    # 512+128+64+16
 
     model = get_model(arch)
 
-    criterion = nn.L1Loss()
-    optimizer = optim.SGD(model.parameters(), lr=0.5, momentum=0.9)
-    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.5)
+    k = 1
+    while True:
+        criterion = nn.L1Loss()
+        # criterion = nn.MSELoss()
+        # optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.9)
+        optimizer = optim.Adam(model.parameters(), lr=0.001)
+        scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=5, gamma=0.2)
 
-    train_model(model, dataloaders, criterion, optimizer, scheduler, num_epochs=EPOCHS_COUNT)  # EPOCHS_COUNT
+        train_model(model, dataloaders, criterion, optimizer, scheduler, num_epochs=EPOCHS_COUNT, arch=arch)
+
+        torch.save(model.state_dict(), MODEL_PATH_CHECKPOINT.format(arch=arch, checkpoint=k))
+        k += 1
