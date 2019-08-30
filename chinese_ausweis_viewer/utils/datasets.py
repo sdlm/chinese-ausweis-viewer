@@ -1,9 +1,11 @@
 import os
 import random
 import time
+from typing import Tuple
 
 import imageio
 import numpy as np
+import torch
 from PIL import Image
 from torch.utils import data
 from torchvision.transforms import transforms
@@ -66,6 +68,40 @@ class ChineseCardDataset(data.Dataset):
         value - torch.tensor - image
         label - List[Tuple[float]] - card corner's coords
         """
+        return self.values[index], self.labels[index]
+
+
+class ChineseCardClassificationDataset(data.Dataset):
+
+    DIR = 'data/train/classification/128'
+
+    def __init__(self, count: int):
+        start_time = time.time()
+        print('Initialize dataset')
+
+        self.count = count
+        to_tensor = transforms.ToTensor()
+        self.values = [to_tensor(Image.open(f"{self.DIR}/{i:0>7}.png")) for i in range(count)]
+        all_labels = np.loadtxt(f'{self.DIR}/labels.csv').astype(dtype=np.float)
+        self.labels = [
+            torch.from_numpy(array).long()
+            for array in np.split(all_labels, all_labels.shape[0])
+        ]
+        time_elapsed = time.time() - start_time
+        print('samples loading elapsed: {:.0f}m {:.0f}s'.format(time_elapsed // 60, time_elapsed % 60))
+
+    def __len__(self):
+        return self.count
+
+    def __getitem__(self, index) -> Tuple[torch.tensor, bool]:
+        """
+        Generates one sample of data
+
+        return Tuple[value, label]
+        value - torch.tensor - image
+        label - bool - is card exists on image
+        """
+        # noinspection PyUnresolvedReferences
         return self.values[index], self.labels[index]
 
 
