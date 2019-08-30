@@ -207,10 +207,10 @@ def get_model(arch: str):
         num_ftrs = net.fc.in_features
         net.fc = nn.Linear(num_ftrs, NUM_CLASSES)
 
-        # path = MODEL_PATH.format(arch=arch)
-        # net.load_state_dict(torch.load(path))
-        # print(f'Succesfully load weights from {path}')
-        # net.eval()
+        path = MODEL_PATH.format(arch=arch)
+        net.load_state_dict(torch.load(path))
+        print(f'Successfully load weights from {path}')
+        net.eval()
 
     net = net.to(device)
     return net
