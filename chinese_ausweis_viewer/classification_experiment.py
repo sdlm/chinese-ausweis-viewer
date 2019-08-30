@@ -66,8 +66,7 @@ def train_model(model, dataloaders, criterion, optimizer, scheduler, num_epochs=
                 with torch.set_grad_enabled(phase == "train"):
                     # Get model outputs and calculate loss
                     output = model(inputs)
-                    breakpoint()
-                    loss = criterion(output, labels.unsqueeze(1))
+                    loss = criterion(output, labels)
 
                     # _, preds = torch.max(outputs, 1)
 
