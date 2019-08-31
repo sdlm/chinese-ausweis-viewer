@@ -13,12 +13,12 @@ from utils import classes, datasets
 
 
 MAX_SAMPLES_COUNT = 57668
-TRAIN_COUNT = 2 ** 12
+TRAIN_COUNT = 2 ** 15
 TEST_COUNT = 0
 EPOCHS_COUNT = 20
 NUM_CLASSES = 2
 MODEL_PATH = './data/weights/{arch}_classification_v1_temp.pt'
-MODEL_PATH_CHECKPOINT = './data/weights/{arch}_classification_v1.0.{checkpoint}.pt'
+MODEL_PATH_CHECKPOINT = './data/weights/{arch}_classification_v1.2.{checkpoint}.pt'
 
 
 # Detect if we have a GPU available
@@ -103,7 +103,7 @@ def train_model(model, dataloaders, criterion, optimizer, scheduler, num_epochs=
             # if phase == 'val':
             #     val_acc_history.append(epoch_acc)
 
-            # torch.save(model.state_dict(), MODEL_PATH.format(arch=arch))
+            torch.save(model.state_dict(), MODEL_PATH.format(arch=arch))
 
         # print()
 
@@ -243,7 +243,7 @@ if __name__ == "__main__":
     dataset_params = {"train": TRAIN_COUNT, "val": TEST_COUNT}
     image_datasets = {x: datasets.ChineseCardClassificationDataset(dataset_params[x]) for x in ["train"]}  # , "val"
     dataloaders = {
-        x: data.DataLoader(image_datasets[x], batch_size=512, shuffle=True, num_workers=4) for x in ["train"]
+        x: data.DataLoader(image_datasets[x], batch_size=1024-64, shuffle=True, num_workers=4) for x in ["train"]
     }
     # 512+128+64+16
 

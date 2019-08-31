@@ -82,18 +82,14 @@ class ChineseCardClassificationDataset(data.Dataset):
         self.count = count
         to_tensor = transforms.ToTensor()
         self.values = [to_tensor(Image.open(f"{self.DIR}/{i:0>7}.png")) for i in range(count)]
-        all_labels = np.loadtxt(f'{self.DIR}/labels.csv').astype(dtype=np.bool)
-        self.labels = [
-            torch.from_numpy(np.array((1, 0) if label else (0, 1))).long()
-            for label in all_labels
-        ]
+        self.labels = np.loadtxt(f'{self.DIR}/labels.csv').astype(dtype=np.int).tolist()
         time_elapsed = time.time() - start_time
         print('samples loading elapsed: {:.0f}m {:.0f}s'.format(time_elapsed // 60, time_elapsed % 60))
 
     def __len__(self):
         return self.count
 
-    def __getitem__(self, index) -> Tuple[torch.tensor, torch.tensor]:
+    def __getitem__(self, index) -> Tuple[torch.tensor, int]:
         """
         Generates one sample of data
 
